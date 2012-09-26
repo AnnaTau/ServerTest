@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.hibernate.SessionFactory;
 
 /**
  *
@@ -19,6 +20,7 @@ public class Server {
     private ServerSocket serverSocket;
     private ConcurrentHashMap<String, Connect> connectionMap;
     private MySqlConnect connect;
+    private SessionFactory factory;
 
     public Server() {
         connectionMap = new ConcurrentHashMap<String, Connect>();
@@ -37,16 +39,16 @@ public class Server {
         }
         connect = new MySqlConnect();
         connect.createIfNotExist("chat");
+        factory = HibernateUtil.getSessionFactory();
         try {
             while (true) {
                 System.out.println("Waiting for connection");
                 Socket connection = serverSocket.accept();
                 Connect connect = new Connect(connection);
-                ClientListener client = new ClientListener(connect, genId(), connectionMap);
+                ClientListener client = new ClientListener(connect, genId(), connectionMap, factory);
                 Thread clientThread = new Thread(client);
                 clientThread.start();
-
-                Thread.sleep(50);
+                Thread.sleep(50);              
             }
 
         } catch (Exception ex) {

@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 /**
  *
@@ -26,19 +28,22 @@ public class ClientListener implements Runnable {
     Socket socket;
     String uid;
     Map<String, Connect> map;
+    SessionFactory factory;
     
-    public ClientListener(Connect connection, String id, ConcurrentHashMap<String, Connect> map) {
+    public ClientListener(Connect connection, String id, ConcurrentHashMap<String, Connect> map, SessionFactory s) {
         this.connection = connection;
         this.uid = id;
         this.map = map;
         map.put(id, connection);
         this.socket = connection.getSocket();
+        this.factory = s;
     }
 
     public void run() {
         System.out.println("Connection received from " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
         ObjectOutputStream out = null;
         ObjectInputStream in = null;
+        Session session = factory.openSession();
         try {
             out = connection.getOut();
             sendMessage(out, new Message(uid, "Connection sucsessful"));
@@ -52,6 +57,7 @@ public class ClientListener implements Runnable {
                         sendMessage(out, new Message(uid, "bye"));
                         break;
                     }
+                    session.save(msg);
                     System.out.println("received from client>" + msg.getMsg());
                     for(Connect c: map.values()){
                         tempOut = c.getOut();
@@ -70,6 +76,7 @@ public class ClientListener implements Runnable {
             ex.printStackTrace();
         } finally {
             map.remove(uid);
+            session.close();
             closeStreamQuietly(in);
             closeStreamQuietly(out);
             closeSocketQuietly(socket);
