@@ -18,6 +18,7 @@ public class Server {
 
     private ServerSocket serverSocket;
     private ConcurrentHashMap<String, Connect> connectionMap;
+    private MySqlConnect connect;
 
     public Server() {
         connectionMap = new ConcurrentHashMap<String, Connect>();
@@ -34,6 +35,8 @@ public class Server {
             System.out.println("Server can't start because server socket is null");
             return;
         }
+        connect = new MySqlConnect();
+        connect.createIfNotExist("chat");
         try {
             while (true) {
                 System.out.println("Waiting for connection");
